@@ -10,7 +10,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "larp-clicker-db"
-database_id = "REMPLACE_PAR_LE_DATABASE_ID"
+database_id = "29459840-2bea-4e0f-8cb4-13c6b9430a52"
 
 [[durable_objects.bindings]]
 name = "LIVE_ROOM"
