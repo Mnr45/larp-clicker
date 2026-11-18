@@ -1,0 +1,690 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LARP CLICKER</title>
+<style>
+:root{--bg:#101522;--panel:#1c2636;--line:#43516a;--gold:#ffd36a;--purple:#a78bfa;--text:#f2f4fa;--muted:#aab5c8;--green:#63d99b;--red:#f47777}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#34425b,#101522 70%);color:var(--text);font-family:system-ui,Arial}
+header{padding:16px;text-align:center;background:#141d2c;border-bottom:2px solid var(--gold)}
+h1{margin:0;color:var(--gold);letter-spacing:5px;text-shadow:0 0 15px #e9a83c}
+header small{color:var(--muted)}
+.stats{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;padding:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+main{max-width:1500px;margin:auto;padding:12px;display:grid;grid-template-columns:minmax(230px,.78fr) minmax(430px,1.45fr) minmax(250px,.82fr);grid-template-areas:"menu arena boss" "inventory arena admin";align-items:start;gap:12px}
+main>section:nth-of-type(1){grid-area:arena}main>section:nth-of-type(2){grid-area:menu}main>section:nth-of-type(3){grid-area:boss}main>section:nth-of-type(4){grid-area:inventory}main>section:nth-of-type(5){grid-area:admin}
+main>section{min-width:0} .panel{animation:panelIn .45s ease both} .item,.slot,.stat,button{transition:transform .2s ease,box-shadow .2s ease,filter .2s ease} .item:hover,.slot:hover{transform:translateY(-2px);box-shadow:0 5px 16px #0005}
+@keyframes panelIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.panel{background:linear-gradient(145deg,#202c40,#172131);border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0;box-shadow:0 5px 20px #0004}
+h2{font-size:18px;color:var(--gold);margin:0 0 12px}
+h3{font-size:15px;color:#c9b5ff;margin:10px 0}
+button,input,select{font:inherit;color:white;background:#303e56;border:1px solid #60718d;border-radius:7px;padding:9px}
+button{cursor:pointer;margin:3px;transition:.15s}
+button:hover{filter:brightness(1.25);transform:translateY(-1px)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.primary{background:#654bb1;border-color:#b39aff}
+.gold{background:#76551d;border-color:var(--gold)}
+.danger{background:#692e3b;border-color:var(--red)}
+.good{background:#245b42;border-color:var(--green)}
+.muted{font-size:12px;color:var(--muted)}
+.bar{height:14px;background:#090d16;border:1px solid #45516a;border-radius:20px;overflow:hidden;margin:6px 0}
+.fill{height:100%;background:linear-gradient(90deg,#e34d63,#ff9d6c);transition:width .2s}
+.xpfill{background:linear-gradient(90deg,#4b9cff,#ad84ff)}
+.arena{position:relative;background:linear-gradient(#52677c 0%,#314b4d 68%,#263a32 68%,#1a3028 100%);border:2px solid #687c73;border-radius:12px;overflow:hidden;text-align:center}
+.battlefield{height:245px;display:flex;justify-content:space-around;align-items:center;position:relative}
+.actor{text-align:center;z-index:2;animation:actorIdle 2.4s ease-in-out infinite;transform-origin:50% 85%}
+#heroActor{animation-delay:.2s}#monsterActor{animation-duration:2s}
+@keyframes actorIdle{0%,100%{translate:0 0}50%{translate:0 -7px}}
+.boss-stage{display:flex;justify-content:center;align-items:center;min-height:155px;position:relative;overflow:hidden;border-radius:10px;background:radial-gradient(ellipse,#45365f,#111a29 72%);margin:8px 0}
+#bossCanvas{width:170px;height:150px;image-rendering:pixelated;filter:drop-shadow(0 0 14px #a78bfa);animation:bossIdle 1.8s ease-in-out infinite;transform-origin:50% 85%}
+@keyframes bossIdle{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.035)}}
+.boss-stage.spawned{animation:bossSpawn .65s ease-out}
+@keyframes bossSpawn{0%{filter:brightness(4);transform:scale(.7)}60%{filter:brightness(1.8);transform:scale(1.08)}100%{filter:brightness(1);transform:scale(1)}}
+.boss-hit{animation:bossHit .38s ease!important}@keyframes bossHit{0%,100%{transform:translateX(0)}20%{transform:translateX(12px) rotate(8deg);filter:brightness(2)}45%{transform:translateX(-12px) rotate(-8deg)}70%{transform:scale(1.1)}}
+.hero-hit{animation:heroHit .3s ease} .monster-hit{animation:monsterHit .25s}
+.actor canvas{width:170px;max-width:42vw;height:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 5px #0007)}
+.actor-name{font-size:11px;font-weight:bold;text-shadow:2px 2px #000}
+.hero-hit{animation:heroHit .3s ease}
+.monster-hit{animation:monsterHit .25s}
+@keyframes heroHit{0%{transform:translateX(0)}40%{transform:translateX(36px) rotate(-12deg)}75%{transform:translateX(43px) rotate(10deg)}100%{transform:translateX(0)}}
+@keyframes monsterHit{0%,100%{transform:translateX(0)}25%{transform:translateX(12px) rotate(8deg)}50%{transform:translateX(-12px) rotate(-8deg)}}
+.float{position:absolute;z-index:5;color:#ffe58a;font-size:25px;font-weight:900;pointer-events:none;animation:float .7s forwards;text-shadow:2px 2px #000}
+@keyframes float{to{transform:translateY(-70px) scale(1.4);opacity:0}}
+.scene-effects{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.projectile{position:absolute;z-index:6;left:48%;top:48%;font-size:30px;filter:drop-shadow(0 0 9px currentColor);animation:projectileFly .42s ease-out forwards}
+@keyframes projectileFly{0%{transform:translate(0,0) scale(.5) rotate(0);opacity:0}15%{opacity:1}100%{transform:translate(230px,-25px) scale(1.5) rotate(35deg);opacity:0}}
+.slashfx{position:absolute;z-index:6;left:54%;top:25%;font-size:55px;animation:slashFx .35s ease-out forwards;filter:drop-shadow(0 0 10px #fff)}
+@keyframes slashFx{0%{opacity:0;transform:scale(.2) rotate(-60deg)}45%{opacity:1;transform:scale(1.25) rotate(15deg)}100%{opacity:0;transform:scale(1.7) rotate(55deg)}}
+.class-note{color:var(--muted);font-size:11px;max-width:270px}
+.class-card{align-items:flex-start}.class-card button{min-width:118px}
+.battle-controls{padding:10px;background:#101a26}
+.tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.tab.active{background:#7256b8;border-color:#c1a9ff}
+#content{min-height:250px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#111a29;border:1px solid #35465e;border-radius:8px;padding:9px;margin:6px 0}
+.item small{display:block;color:var(--muted)}
+.common{color:#ddd}.uncommon{color:#69d99a}.rare{color:#71b4ff}.epic{color:#c89aff}.legendary{color:#ffd36a}.mythic{color:#ff80c4}.divine,.ancient,.secret{color:#fff;text-shadow:0 0 9px #ad91ff}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.slot{background:#111a29;border:1px solid #485a74;border-radius:8px;padding:9px;text-align:center;min-width:0}
+.slot b{display:block;color:var(--gold);font-size:12px}
+.slot span{font-size:23px}
+.log{height:100px;overflow:auto;background:#0c1320;padding:8px;border-radius:7px;font-size:12px;color:#c2cce0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+footer{text-align:center;color:var(--muted);padding:20px}
+@media(max-width:1050px){main{grid-template-columns:minmax(220px,.8fr) minmax(0,1.4fr);grid-template-areas:"menu arena" "boss arena" "inventory admin"}}
+@media(max-width:760px){main{grid-template-columns:1fr;grid-template-areas:"arena" "menu" "boss" "inventory" "admin"}.slots{grid-template-columns:repeat(4,1fr)}}
+
+/* Connexion / inscription Cloudflare */
+#authGate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at top,#34425b,#080d17 78%)}
+.auth-card{width:min(440px,100%);padding:28px;text-align:center;background:#1c2636;border:2px solid var(--gold);border-radius:16px;box-shadow:0 0 38px #000b}
+.auth-card h2{font-size:27px;letter-spacing:3px;margin-bottom:8px}
+.auth-card p{color:var(--muted);line-height:1.5}
+.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}
+.auth-actions button{padding:13px 8px;font-weight:700}
+.global-banner{display:none;margin:10px auto;max-width:1200px;padding:12px 16px;border:1px solid #ffd36a;border-radius:10px;background:linear-gradient(90deg,#493b75,#243a5b);text-align:center;box-shadow:0 0 18px #a78bfa55}
+.global-banner.show{display:block}.disco-mode{animation:discoHue 2s linear infinite}
+@keyframes discoHue{0%{filter:hue-rotate(0)}100%{filter:hue-rotate(360deg)}}
+.social-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.social-box{background:#111a29;border:1px solid #35465e;border-radius:9px;padding:10px;min-width:0}
+.feed-list{max-height:230px;overflow:auto}.feed-entry{padding:8px;border-bottom:1px solid #35465e;font-size:13px}.feed-entry small{display:block;color:var(--muted)}
+.admin-tools{display:grid;grid-template-columns:1fr 1fr;gap:7px}.admin-tools input,.admin-tools select{width:100%;min-width:0}.admin-tools button{width:100%;margin:2px 0}
+#discoOverlay{display:none;position:fixed;inset:0;pointer-events:none;z-index:9000;background:repeating-conic-gradient(from 0deg,#ff4d6d22 0 8deg,#ffe66d22 8deg 16deg,#58d6ff22 16deg 24deg,#b88cff22 24deg 32deg);mix-blend-mode:screen;animation:discoHue .8s linear infinite}
+@media(max-width:650px){.social-grid{grid-template-columns:1fr}.admin-tools{grid-template-columns:1fr}}
+#authStatus{min-height:24px;color:#ffd36a;font-size:12px}
+#accountBar{display:none;text-align:center;padding:8px;color:var(--gold);background:#141d2c;border-bottom:1px solid var(--line)}
+#accountBar button{margin-left:12px}
+
+</style>
+</head>
+<body>
+<header>
+<h1>⚔ LARP CLICKER ⚔</h1>
+<small>Become a legend. Defeat the darkness.</small>
+</header>
+
+<div id="authGate">
+  <div class="auth-card">
+    <h2>⚔ LARP CLICKER ⚔</h2>
+    <p>Crée ton compte ou connecte-toi pour retrouver ta partie.</p>
+    <input id="authName" maxlength="24" placeholder="Nom de joueur (inscription)" autocomplete="nickname" style="width:100%;margin:5px 0">
+    <input id="authEmail" type="email" maxlength="180" placeholder="Adresse e-mail" autocomplete="email" style="width:100%;margin:5px 0">
+    <input id="authPassword" type="password" minlength="10" placeholder="Mot de passe (10 caractères minimum)" autocomplete="current-password" style="width:100%;margin:5px 0">
+    <div class="auth-actions">
+      <button class="primary" onclick="submitAccount('register')">✨ INSCRIPTION</button>
+      <button class="gold" onclick="submitAccount('login')">🔐 CONNEXION</button>
+    </div>
+    <div id="authStatus">Comptes hébergés sur Cloudflare</div>
+    <p class="muted">Utilise un mot de passe unique. La connexion est gérée par le serveur du jeu.</p>
+  </div>
+</div>
+<div id="accountBar"><span id="accountName"></span><button onclick="logoutAccount()">Déconnexion</button><span id="liveStatus" class="muted">● Connexion...</span></div>
+<div id="globalBanner" class="global-banner"></div><div id="discoOverlay"></div>
+
+<div class="stats">
+<div class="stat">🪙 <b id="gold">0</b></div>
+<div class="stat">💎 <b id="gems">0</b></div>
+<div class="stat">⭐ Niveau <b id="level">1</b></div>
+<div class="stat">⚔ Dégâts <b id="damage">1</b></div>
+<div class="stat">🏆 Rebirth <b id="rebirth">0</b></div>
+</div>
+
+<main>
+<section class="panel">
+<h2>⚔ Arène de combat</h2>
+<div class="muted" id="worldName">Green Forest</div>
+<div class="arena">
+<div class="battlefield">
+<div class="actor" id="heroActor">
+<canvas id="hero" width="180" height="210"></canvas>
+<div class="actor-name" id="heroLabel">⚔️ WARRIOR</div>
+</div>
+<div class="scene-effects" id="effects"></div>
+<div class="actor" id="monsterActor">
+<canvas id="monster" width="180" height="210"></canvas>
+<div class="actor-name" id="monsterLabel">SLIME</div>
+</div>
+</div>
+<div class="battle-controls">
+<h3 id="enemyName">Slime</h3>
+<div class="muted"><span id="enemyHP">10</span> / <span id="enemyMaxHP">10</span> PV</div>
+<div class="bar"><div class="fill" id="enemyBar"></div></div>
+<button class="primary" style="font-size:18px;padding:12px 30px" onclick="attack()">⚔ ATTAQUER</button>
+<button onclick="useSkill()">✨ COMPÉTENCE</button>
+<button onclick="usePotion()">🧪 POTION</button>
+<div class="muted" id="combo">Combo : 0</div>
+</div>
+</div>
+<h3>Expérience</h3>
+<div class="bar"><div class="fill xpfill" id="xpBar"></div></div>
+<div class="muted"><span id="xp">0</span> / <span id="xpNeed">50</span> XP</div>
+<h3>Journal</h3>
+<div class="log" id="log"></div>
+</section>
+
+<section class="panel">
+<h2>📜 Menu de l'aventurier</h2>
+<div class="tabs">
+<button class="tab active" onclick="tab('profile',this)">Profil</button>
+<button class="tab" onclick="tab('gear',this)">Équipement</button>
+<button class="tab" onclick="tab('classes',this)">Classes</button>
+<button class="tab" onclick="tab('pets',this)">Pets</button>
+<button class="tab" onclick="tab('worlds',this)">Mondes</button>
+<button class="tab" onclick="tab('quests',this)">Quêtes</button>
+<button class="tab" onclick="tab('forge',this)">Forge</button>
+<button class="tab" onclick="tab('shop',this)">Boutique</button>
+<button class="tab" onclick="tab('codes',this)">Codes</button>
+<button class="tab" onclick="tab('social',this)">🌐 Multijoueur</button>
+<button class="tab" onclick="tab('events',this)">🎉 Événements</button>
+<button class="tab" onclick="tab('ascend',this)">Ascension</button>
+</div>
+<div id="content"></div>
+</section>
+
+<section class="panel">
+<h2>👑 Boss</h2>
+<div class="boss-stage" id="bossStage"><canvas id="bossCanvas" width="180" height="150"></canvas></div><div id="bossInfo">Aucun boss invoqué.</div>
+<button class="danger" onclick="spawnBoss()">Invoquer un boss</button>
+<button class="gold" onclick="attackBoss()">Attaquer</button>
+</section>
+
+<section class="panel">
+<h2>🎒 Inventaire</h2>
+<div id="inventorySummary"></div>
+<h3>💾 Sauvegarde</h3>
+<button onclick="save()">Sauvegarder</button>
+<button onclick="exportSave()">Exporter JSON</button>
+<button onclick="document.getElementById('file').click()">Importer JSON</button>
+<input id="file" type="file" accept=".json" hidden onchange="importSave(event)">
+<button class="danger" onclick="resetGame()">Réinitialiser</button>
+</section>
+
+<section class="panel">
+<h2>🔒 Administration locale</h2>
+<input id="adminCode" placeholder="Code secret" type="password">
+<button onclick="adminLogin()">Connexion</button>
+<div id="adminArea"></div>
+<div class="muted">Administration globale protégée côté serveur. Configure LARP_ADMIN_CODE dans Cloudflare.</div>
+</section>
+</main>
+<footer>LARP CLICKER • Pixel RPG • Comptes Cloudflare</footer>
+
+<script>
+"use strict";
+
+const $=id=>document.getElementById(id);
+const worlds=[
+["Green Forest","🌲",1],["Goblin Village","🏚️",4],["Dark Dungeon","💀",10],
+["Ice Kingdom","❄️",22],["Lava World","🌋",45],["Dragon Mountain","🐉",80],
+["Heaven","☀️",140],["Void Dimension","🌌",250]
+];
+const enemies=[
+["Slime","🟢"],["Goblin","👺"],["Skeleton","💀"],["Forest Wolf","🐺"],["Mushroom Beast","🍄"],
+["Bandit","🗡️"],["Orc","👹"],["Giant Spider","🕷️"],["Dark Mage","🧙"],["Cave Troll","🧌"],
+["Vampire","🧛"],["Ghost","👻"],["Cursed Knight","🛡️"],["Demon","😈"],["Frost Wolf","🐺"],
+["Ice Golem","🧊"],["Snow Witch","🧙‍♀️"],["Lava Beast","🔥"],["Fire Elemental","♨️"],["Magma Golem","🗿"],
+["Wyvern","🐲"],["Dragon","🐉"],["Drake","🐉"],["Ancient Dragon","🐉"],["Sky Guardian","🪽"],
+["Celestial Knight","⚔️"],["Light Seraph","👼"],["Golden Titan","🗿"],["Voidling","🌑"],["Shadow Beast","👾"],
+["Void Reaper","☠️"],["Nightmare","👁️"],["Abyss Demon","👿"],["Lost King","👑"],["Ancient Guardian","🗿"],
+["World Eater","🌌"],["Void King","👑"],["Chaos Dragon","🐲"],["Eternal Horror","👁️"],["The Forgotten","💀"]
+];
+const classes={
+Warrior:{emoji:"⚔️",mult:1.5,crit:5,skill:"Power Strike",attack:"slash",cost:0,level:1,desc:"Coups d'épée puissants et fiables."},
+Mage:{emoji:"🔮",mult:1.8,crit:8,skill:"Arcane Blast",attack:"orb",cost:800,level:5,desc:"Orbes arcaniques et explosions magiques."},
+Archer:{emoji:"🏹",mult:1.3,crit:15,skill:"Arrow Rain",attack:"arrow",cost:1400,level:8,desc:"Tirs rapides à distance."},
+Assassin:{emoji:"🗡️",mult:1.4,crit:25,skill:"Shadow Strike",attack:"dash",cost:2500,level:12,desc:"Téléportation et frappes critiques."},
+Paladin:{emoji:"🛡️",mult:1.2,crit:7,skill:"Holy Smite",attack:"holy",cost:4200,level:16,desc:"Lumière sacrée et protection."},
+Necromancer:{emoji:"💀",mult:1.6,crit:10,skill:"Soul Curse",attack:"skull",cost:7000,level:20,desc:"Esprits et magie nécrotique."},
+Berserker:{emoji:"🪓",mult:2,crit:5,skill:"Blood Rage",attack:"slam",cost:11000,level:25,desc:"Coups lourds qui gagnent en puissance."},
+"Dragon Knight":{emoji:"🐉",mult:2.2,crit:12,skill:"Dragon Breath",attack:"fire",cost:18000,level:30,desc:"Souffle draconique dévastateur."},
+Druid:{emoji:"🌿",mult:1.65,crit:11,skill:"Nature's Wrath",attack:"vine",cost:28000,level:35,desc:"Ronces et magie de la forêt."},
+Samurai:{emoji:"⛩️",mult:2.05,crit:18,skill:"Iaido Storm",attack:"katana",cost:42000,level:40,desc:"Dégainé éclair au katana."},
+Monk:{emoji:"🥋",mult:1.75,crit:14,skill:"Sevenfold Palm",attack:"fist",cost:62000,level:45,desc:"Combos de poings et ondes de choc."},
+Spellblade:{emoji:"🪄",mult:2.25,crit:16,skill:"Runic Cleave",attack:"rune",cost:90000,level:55,desc:"Lame enchantée et runes explosives."},
+Beastmaster:{emoji:"🐾",mult:1.9,crit:12,skill:"Pack Assault",attack:"paw",cost:135000,level:65,desc:"Assaut coordonné de compagnons."},
+Stormcaller:{emoji:"⚡",mult:2.4,crit:13,skill:"Thunderfall",attack:"lightning",cost:200000,level:75,desc:"Éclairs qui frappent instantanément."},
+Cryomancer:{emoji:"❄️",mult:2.15,crit:12,skill:"Absolute Zero",attack:"ice",cost:300000,level:90,desc:"Lances de glace et gel mystique."},
+Pyromancer:{emoji:"🔥",mult:2.5,crit:10,skill:"Meteor Shower",attack:"meteor",cost:450000,level:105,desc:"Météores et flammes explosives."},
+Valkyrie:{emoji:"🪽",mult:2.35,crit:18,skill:"Spear of Dawn",attack:"spear",cost:700000,level:120,desc:"Lances célestes et lumière guerrière."},
+Reaper:{emoji:"☠️",mult:2.7,crit:22,skill:"Soul Harvest",attack:"scythe",cost:1100000,level:140,desc:"Faux spectrale qui récolte les âmes."},
+"Blood Mage":{emoji:"🩸",mult:2.8,crit:17,skill:"Crimson Nova",attack:"blood",cost:1700000,level:165,desc:"Magie rouge à très haute puissance."},
+Chronomancer:{emoji:"⏳",mult:2.55,crit:20,skill:"Time Rift",attack:"time",cost:2600000,level:190,desc:"Fissures temporelles et frappes accélérées."},
+"Lich King":{emoji:"👑",mult:3.0,crit:18,skill:"Undying Legion",attack:"lich",cost:4000000,level:220,desc:"Roi mort-vivant entouré d'âmes."},
+Celestial:{emoji:"🌟",mult:3.2,crit:20,skill:"Starfall",attack:"star",cost:6500000,level:250,desc:"Énergie des étoiles et rayons divins."},
+Voidwalker:{emoji:"🌌",mult:3.5,crit:24,skill:"Rift Collapse",attack:"void",cost:10000000,level:280,desc:"Distorsions du vide qui déchirent l'arène."},
+Titan:{emoji:"🗿",mult:3.8,crit:12,skill:"Worldbreaker",attack:"quake",cost:16000000,level:310,desc:"Force colossale et séismes."},
+"Arcane Archer":{emoji:"🏹",mult:3.4,crit:28,skill:"Astral Barrage",attack:"arcaneArrow",cost:25000000,level:340,desc:"Flèches magiques à trajectoires multiples."},
+"Demon Lord":{emoji:"😈",mult:4.0,crit:22,skill:"Hellfire Crown",attack:"hell",cost:40000000,level:370,desc:"Flammes infernales et puissance démoniaque."},
+"Phoenix Knight":{emoji:"🪶",mult:4.2,crit:25,skill:"Rebirth Flame",attack:"phoenix",cost:65000000,level:400,desc:"Lames de feu et renaissance flamboyante."},
+"Dragon Emperor":{emoji:"🐲",mult:4.8,crit:30,skill:"Imperial Dragonstorm",attack:"dragonstorm",cost:100000000,level:430,desc:"Ultime souverain des dragons."}
+};
+const rarities=["Common","Uncommon","Rare","Epic","Legendary","Mythic","Divine","Ancient","Secret"];
+const rarityWeights=[42,25,15,9,5,2.2,1.1,.5,.2];
+const weapons=["Wooden Sword","Iron Sword","Steel Sword","Golden Sword","Dragon Sword","Shadow Blade","Divine Sword","Infinity Blade"];
+const armorNames=["Leather Helmet","Iron Helmet","Steel Helmet","Dragon Helmet","Shadow Hood","Divine Crown","Leather Armor","Iron Armor","Steel Armor","Dragon Armor","Shadow Armor","Divine Robe","Leather Boots","Iron Boots","Dragon Boots","Shadow Boots","Divine Boots","Iron Gloves","Steel Gloves","Dragon Gloves","Shadow Gloves","Divine Gloves","Wooden Shield","Iron Shield","Golden Shield","Dragon Shield","Divine Shield","Wolf Ring","Phoenix Ring","Void Ring","Lucky Ring","Ancient Ring","Forest Amulet","Dragon Amulet","Divine Amulet","Void Amulet","Warrior Gauntlets","Mage Gloves","Archer Gloves","Paladin Shield","Demon Mask","Angel Halo","Frost Cloak","Lava Mantle","Royal Cape","Infinity Armor","Ancient Boots","Secret Crown","Eternal Necklace","Guardian Plate","Celestial Gloves","Abyss Shield"];
+const gearNames=[...weapons,...armorNames];
+const gearDB=gearNames.map((name,i)=>({name,power:1+i*.13,rarity:rarities[Math.min(8,Math.floor(i/7))],type:i<8?"weapon":"armor"}));
+const petNames=["Baby Dragon","Wolf","Phoenix","Fairy","Demon","Angel","Shadow Cat","Void Dragon","Slime","Goblin Spirit","Skeleton Bird","Forest Fox","Ice Spirit","Fire Cub","Mini Golem","Bat","Griffin","Unicorn","Dark Raven","Light Sprite","Magma Pup","Frost Fox","Wyvern Hatchling","Crystal Fairy","Ancient Turtle","Star Rabbit","Moon Owl","Abyss Cat","Celestial Dragon","Secret Spirit"];
+const defaultState=()=>({
+gold:0,gems:0,level:1,xp:0,baseDamage:1,rebirth:0,world:0,enemyIndex:0,
+enemyHP:10,enemyMax:10,combo:0,className:"Warrior",classUnlocked:["Warrior"],
+stats:{strength:0,defense:0,speed:0,intelligence:0,crit:0},
+gear:[],equipped:{weapon:null,helmet:null,armor:null,boots:null,gloves:null,ring:null,amulet:null,shield:null},
+pets:[],materials:0,potions:3,codes:[],boss:null,bossKills:0,kills:0,
+unlockedWorlds:1,skillPoints:0,quests:[],god:false
+});
+let state=defaultState();
+let lastAttack=0;
+
+function log(t){$("log").innerHTML="<div>› "+t+"</div>"+$("log").innerHTML}
+function fmt(n){return Math.floor(n).toLocaleString("fr-FR")}
+function requiredXP(){return Math.floor(50*Math.pow(state.level,1.45))}
+function enemy(){return enemies[state.enemyIndex%40]}
+function worldScale(){return Math.pow(1.48,state.world)*Math.pow(1.18,state.enemyIndex)}
+function petMultiplier(){return 1+state.pets.length*.04}
+function gearMultiplier(){return Object.values(state.equipped).reduce((a,g)=>a*(g?.power||1),1)}
+function damage(){
+return Math.max(1,Math.floor((state.baseDamage+state.stats.strength*2)*classes[state.className].mult*(1+state.rebirth*.35)*petMultiplier()*gearMultiplier()));
+}
+let authUser=null;
+let SAVE_KEY=null;
+let serverSyncAt=0, adminSecret="", globalPollBusy=false, globalData={events:[],messages:[],players:[],inbox:[]};
+let liveSocket=null, liveReconnectTimer=null;
+const API_URL="/api";
+async function apiCall(payload=null, query=""){
+  if(!authUser) throw new Error("Connecte-toi d'abord.");
+  const opts=payload?{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authUser.token},body:JSON.stringify(payload)}:{headers:{"Authorization":"Bearer "+authUser.token}};
+  const res=await fetch(API_URL+(payload?"/action":"/world"),opts);
+  const data=await res.json().catch(()=>({error:"Réponse serveur invalide"}));
+  if(!res.ok)throw new Error(data.error||"Erreur serveur");
+  return data;
+}
+async function pushOnlineSave(){
+  if(!authUser)return;
+  try{const r=await apiCall({action:"sync",name:authUser.name||authUser.email?.split("@")[0]||"Aventurier",save:state});serverSyncAt=r.updatedAt||Date.now();}
+  catch(e){console.warn("Synchronisation en ligne :",e.message)}
+}
+async function refreshGlobal(){
+  if(!authUser||globalPollBusy)return;globalPollBusy=true;
+  try{
+    const d=await apiCall(null,"view=world");renderGlobalData(d);
+    if(d.mySave&&d.updatedAt>serverSyncAt){
+      state={...defaultState(),...d.mySave,equipped:{...defaultState().equipped,...(d.mySave.equipped||{})},stats:{...defaultState().stats,...(d.mySave.stats||{})}};
+      localStorage.setItem(SAVE_KEY,JSON.stringify(state));serverSyncAt=d.updatedAt;update();
+    }
+  }catch(e){console.warn("Actualisation globale :",e.message)}finally{globalPollBusy=false}
+}
+function connectLive(){
+  if(!authUser)return;
+  try{
+    if(liveSocket)liveSocket.close();
+    const scheme=location.protocol==="https:"?"wss:":"ws:";
+    liveSocket=new WebSocket(scheme+"//"+location.host+"/api/live?token="+encodeURIComponent(authUser.token));
+    liveSocket.onopen=()=>{$("liveStatus").textContent="● En direct";$("liveStatus").style.color="#63d99b";refreshGlobal();};
+    liveSocket.onmessage=()=>refreshGlobal();
+    liveSocket.onclose=()=>{$("liveStatus").textContent="● Reconnexion…";$("liveStatus").style.color="#ffd36a";if(authUser)liveReconnectTimer=setTimeout(connectLive,2500);};
+    liveSocket.onerror=()=>{try{liveSocket.close()}catch{}};
+  }catch(e){console.warn("WebSocket indisponible",e)}
+}
+function renderGlobalData(d){
+  globalData=d;
+  const active=(d.events||[]).filter(e=>!e.endsAt||e.endsAt>Date.now());
+  const disco=active.some(e=>e.kind==="disco");document.body.classList.toggle("disco-mode",disco);$("discoOverlay").style.display=disco?"block":"none";
+  const banner=$("globalBanner");
+  if(active.length){banner.classList.add("show");banner.innerHTML=active.map(e=>`<b>${escapeHTML(e.title)}</b> — ${escapeHTML(e.description||"")} ${e.kind==="disco"?"🪩 DISCO GLOBAL !":e.kind==="doublegold"?"💰 OR x2 !":e.kind==="doublexp"?"⭐ XP x2 !":""}`).join("<br>");}
+  else{banner.classList.remove("show");banner.textContent="";}
+  if(document.querySelector(".tab.active")?.textContent.includes("Multijoueur"))tab("social",document.querySelector(".tab.active"));
+  if(document.querySelector(".tab.active")?.textContent.includes("Événements"))tab("events",document.querySelector(".tab.active"));
+}
+function eventBoost(kind){return (globalData.events||[]).some(e=>(!e.endsAt||e.endsAt>Date.now())&&e.kind===kind)?2:1;}
+function escapeHTML(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+async function sendGlobalChat(){try{const el=$("chatInput"),message=el.value.trim();if(!message)return;await apiCall({action:"chat",message});el.value="";await refreshGlobal();}catch(e){alert(e.message)}}
+async function sendGift(){try{const to=$("giftTo").value.trim(),kind=$("giftKind").value,amount=Number($("giftAmount").value);await apiCall({action:"gift",to,kind,amount,save:state});state[kind]-=amount;save();await refreshGlobal();alert("Cadeau envoyé !");}catch(e){alert(e.message)}}
+async function claimGift(id){try{const r=await apiCall({action:"claimGift",giftId:id});if(r.save){state={...defaultState(),...r.save,equipped:{...defaultState().equipped,...(r.save.equipped||{})},stats:{...defaultState().stats,...(r.save.stats||{})}};localStorage.setItem(SAVE_KEY,JSON.stringify(state));update();}await refreshGlobal();alert("Cadeau récupéré !");}catch(e){alert(e.message)}}
+async function adminAction(type){
+ try{
+  const payload={action:"admin",code:adminSecret,type};
+  if(type==="message")payload.message=$("adminMessage").value.trim();
+  if(type==="event"){payload.title=$("eventTitle").value.trim();payload.description=$("eventDesc").value.trim();payload.kind=$("eventKind").value;payload.minutes=Number($("eventMinutes").value)||30;}
+  if(type==="rewardAll"){payload.gold=Number($("adminGold").value)||0;payload.gems=Number($("adminGems").value)||0;}
+  if(type==="givePlayer"){payload.player=$("adminPlayer").value.trim();payload.gold=Number($("adminGold").value)||0;payload.gems=Number($("adminGems").value)||0;}
+  if(type==="endEvents")payload.confirm=true;
+  const r=await apiCall(payload);alert(r.message||"Action admin effectuée.");await refreshGlobal();
+ }catch(e){alert("Admin : "+e.message)}
+}
+function save(){if(!authUser||!SAVE_KEY)return;localStorage.setItem(SAVE_KEY,JSON.stringify(state));pushOnlineSave();log("Partie sauvegardée en ligne.")}
+function load(){
+if(!SAVE_KEY)return;
+try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));if(d){state={...defaultState(),...d,equipped:{...defaultState().equipped,...(d.equipped||{})},stats:{...defaultState().stats,...(d.stats||{})}};if(!Array.isArray(state.classUnlocked))state.classUnlocked=["Warrior"];if(!state.classUnlocked.includes("Warrior"))state.classUnlocked.unshift("Warrior");if(!classes[state.className])state.className="Warrior";if(!Array.isArray(state.pets))state.pets=[];if(!Array.isArray(state.gear))state.gear=[];}}catch(e){console.warn("Sauvegarde locale illisible",e)}
+}
+function openAccount(mode){$("authName").style.display=mode==="register"?"block":"none";$("authPassword").setAttribute("autocomplete",mode==="register"?"new-password":"current-password");$("authStatus").textContent=mode==="register"?"Inscription : nom, e-mail et mot de passe.":"Connexion : entre ton e-mail et ton mot de passe.";}
+async function submitAccount(mode){
+ const email=$("authEmail").value.trim().toLowerCase(),password=$("authPassword").value,name=$("authName").value.trim();
+ if(!email||!password||(mode==="register"&&!name)){$("authStatus").textContent="Remplis tous les champs demandés.";return;}
+ $("authStatus").textContent="Connexion au serveur…";
+ try{
+  const res=await fetch(API_URL+(mode==="register"?"/register":"/login"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password,name})});
+  const data=await res.json();if(!res.ok)throw new Error(data.error||"Impossible de se connecter.");
+  localStorage.setItem("larp_cloudflare_token",data.token);enterGame(data.user);
+ }catch(e){$("authStatus").textContent=e.message;}
+}
+function logoutAccount(){localStorage.removeItem("larp_cloudflare_token");authUser=null;SAVE_KEY=null;if(liveReconnectTimer)clearTimeout(liveReconnectTimer);if(liveSocket)liveSocket.close();location.reload();}
+async function enterGame(user){
+ if(!user)return;
+ authUser=user;SAVE_KEY="larp_clicker_save_"+user.id;
+ $("authGate").style.display="none";$("accountBar").style.display="block";
+ $("accountName").textContent="Connecté : "+(user.name||user.email||"joueur");
+ state=defaultState();load();
+ try{const d=await apiCall(null,"view=world");if(d.mySave){state={...defaultState(),...d.mySave,equipped:{...defaultState().equipped,...(d.mySave.equipped||{})},stats:{...defaultState().stats,...(d.mySave.stats||{})}};serverSyncAt=d.updatedAt||Date.now();}else await pushOnlineSave();renderGlobalData(d);}
+ catch(e){console.warn("Serveur multijoueur indisponible :",e.message);}
+ spawnEnemy();update();tab("profile",document.querySelector(".tab"));connectLive();
+}
+async function bootAuth(){
+ const token=localStorage.getItem("larp_cloudflare_token");
+ if(!token){$("authGate").style.display="flex";openAccount("register");return;}
+ try{const r=await fetch(API_URL+"/me",{headers:{Authorization:"Bearer "+token}});const d=await r.json();if(!r.ok)throw new Error(d.error||"Session expirée");d.user.token=token;enterGame(d.user);}
+ catch(e){localStorage.removeItem("larp_cloudflare_token");$("authGate").style.display="flex";openAccount("login");$("authStatus").textContent="Session expirée. Reconnecte-toi.";}
+}
+
+function update(){
+$("gold").textContent=fmt(state.gold);$("gems").textContent=fmt(state.gems);
+$("level").textContent=state.level;$("damage").textContent=fmt(damage());
+$("rebirth").textContent=state.rebirth;$("heroLabel").textContent=classes[state.className].emoji+" "+state.className.toUpperCase();$("worldName").textContent=worlds[state.world][0];
+$("enemyName").textContent=enemy()[0];$("monsterLabel").textContent=enemy()[0].toUpperCase();
+$("enemyHP").textContent=fmt(state.enemyHP);$("enemyMaxHP").textContent=fmt(state.enemyMax);
+$("enemyBar").style.width=Math.max(0,state.enemyHP/state.enemyMax*100)+"%";
+$("xp").textContent=fmt(state.xp);$("xpNeed").textContent=fmt(requiredXP());
+$("xpBar").style.width=state.xp/requiredXP()*100+"%";
+$("combo").textContent="Combo : "+state.combo;
+$("inventorySummary").textContent=state.gear.length+" équipements • "+state.pets.length+" pets • "+state.materials+" matériaux • "+state.potions+" potions";
+drawHero();drawMonster();renderBoss();
+}
+function spawnEnemy(){state.enemyMax=Math.floor(10*worldScale()*(1+state.level*.12));state.enemyHP=state.enemyMax;update()}
+function levelCheck(){
+while(state.xp>=requiredXP()&&state.level<500){
+state.xp-=requiredXP();state.level++;state.skillPoints+=3;
+log("⭐ Niveau supérieur ! Niveau "+state.level);
+}
+}
+function floatDamage(n,critical){
+let e=document.createElement("div");e.className="float";e.textContent=(critical?"CRIT! ":"-")+fmt(n);
+e.style.left="65%";e.style.top="35%";$("effects").appendChild(e);setTimeout(()=>e.remove(),750);
+}
+function animateAttack(){
+$("heroActor").classList.remove("hero-hit");$("monsterActor").classList.remove("monster-hit");
+void $("heroActor").offsetWidth;
+$("heroActor").classList.add("hero-hit");$("monsterActor").classList.add("monster-hit");
+setTimeout(()=>{$("heroActor").classList.remove("hero-hit");$("monsterActor").classList.remove("monster-hit")},320);
+}
+function classAttackFX(){
+const styles={slash:"⚔️",orb:"🔮",arrow:"➶",dagger:"🗡️",holy:"✨",skull:"💀",slam:"💥",fire:"🔥",vine:"🌿",katana:"〰️",fist:"👊",rune:"🔯",paw:"🐾",lightning:"⚡",ice:"❄️",meteor:"☄️",spear:"🔱",scythe:"☠️",blood:"🩸",time:"⏳",lich:"👑",star:"🌟",void:"🌌",quake:"🌋",arcaneArrow:"🏹",hell:"🔥",phoenix:"🪽",dragonstorm:"🐉"};
+const fx=document.createElement("div");fx.className="projectile";fx.textContent=styles[classes[state.className]?.attack]||"💥";fx.style.left="46%";fx.style.top="42%";$("effects").appendChild(fx);setTimeout(()=>fx.remove(),520);
+}
+function attack(){
+animateAttack();classAttackFX();
+let crit=Math.random()<(0.05+state.stats.crit*.01+classes[state.className].crit/100);
+let d=damage()*(crit?3:1);
+state.enemyHP-=d;state.combo++;floatDamage(d,crit);
+if(crit)log("💥 Coup critique : "+fmt(d)+" dégâts !");
+if(state.enemyHP<=0)winEnemy();
+update();
+}
+function winEnemy(){
+let factor=worldScale(),gold=Math.floor((8*factor+state.level*2)*eventBoost("doublegold"));
+state.gold+=gold;state.xp+=Math.floor(12*factor*eventBoost("doublexp"));state.kills++;
+state.materials+=1+Math.floor(Math.random()*3);
+log("Victoire ! +"+fmt(gold)+" or, XP et matériaux.");
+if(Math.random()<.15)dropGear();
+if(Math.random()<.08)state.gems++;
+if(state.enemyIndex%5===4)state.gems+=2;
+levelCheck();state.enemyIndex++;state.combo=0;
+if(state.enemyIndex%5===0&&state.world<7)state.unlockedWorlds=Math.max(state.unlockedWorlds,state.world+2);
+spawnEnemy();
+}
+function weightedRarity(){
+let n=Math.random()*100,s=0;
+for(let i=0;i<rarities.length;i++){s+=rarityWeights[i];if(n<s)return rarities[i]}
+return "Common";
+}
+function dropGear(){
+let base=gearDB[Math.floor(Math.random()*gearDB.length)];
+let g={...base,rarity:weightedRarity(),power:base.power*(1+state.world*.12)};
+state.gear.push(g);log("🎁 "+g.rarity+" : "+g.name);
+}
+function gearSlot(item){
+let n=item.name.toLowerCase();
+if(n.includes("sword")||n.includes("blade"))return "weapon";
+if(n.includes("helmet")||n.includes("hood")||n.includes("crown")||n.includes("mask")||n.includes("halo"))return "helmet";
+if(n.includes("armor")||n.includes("robe")||n.includes("plate")||n.includes("mantle")||n.includes("cape"))return "armor";
+if(n.includes("boot"))return "boots";
+if(n.includes("glove")||n.includes("gauntlet"))return "gloves";
+if(n.includes("ring"))return "ring";
+if(n.includes("amulet")||n.includes("necklace"))return "amulet";
+return "shield";
+}
+function equip(i){
+let g=state.gear[i],slot=gearSlot(g);
+state.equipped[slot]=g;log("Équipé : "+g.name);
+update();tab("gear");
+}
+function useSkill(){
+let d=damage()*5;
+state.enemyHP-=d;animateAttack();classAttackFX();floatDamage(d,true);
+log("✨ "+classes[state.className].skill+" : "+fmt(d)+" dégâts !");
+if(state.enemyHP<=0)winEnemy();
+update();
+}
+function usePotion(){
+if(state.potions<=0)return log("Plus de potions !");
+state.potions--;state.baseDamage=Math.floor(state.baseDamage*1.5);
+log("🧪 Potion de force activée pour 60 secondes !");
+setTimeout(()=>{state.baseDamage=Math.max(1,Math.floor(state.baseDamage/1.5));update()},60000);
+update();
+}
+function drawHero(){
+const c=$("hero").getContext("2d");c.clearRect(0,0,180,210);
+function p(x,y,w,h,color){c.fillStyle=color;c.fillRect(x,y,w,h)}
+p(45,182,95,8,"#15151b");
+let eq=state.equipped;
+let armorColor=eq.armor?"#9e91c9":"#54708f";
+let helmetColor=eq.helmet?"#d6b65c":"#503725";
+let bootColor=eq.boots?"#d2a94e":"#60412e";
+p(55,150,30,30,bootColor);p(103,150,30,30,bootColor);
+p(58,118,27,39,"#394b72");p(103,118,27,39,"#394b72");
+p(48,69,90,60,armorColor);p(58,80,70,40,eq.armor?"#d7c9ff":"#6f88a4");
+p(65,25,55,47,"#e5ad82");p(58,20,65,18,"#49301f");p(58,30,12,25,"#49301f");
+p(75,43,7,7,"#151515");p(103,43,7,7,"#151515");
+if(eq.helmet){p(57,15,70,20,helmetColor);p(70,7,45,10,"#f4d98c")}
+p(35,75,20,45,"#e5ad82");p(130,75,20,45,"#e5ad82");
+if(eq.shield){p(24,95,28,48,"#98723c");p(31,104,14,28,"#e4c56c")}
+c.save();c.translate(145,105);c.rotate(-.35);
+p(-4,0,10,45,"#85562d");
+p(-2,-65,7,65,eq.weapon?"#e4d4a4":"#dce9f4");
+p(-8,-20,20,7,"#e7bf63");c.restore();
+if(eq.ring)p(136,114,9,9,"#ffe18b");
+if(eq.amulet){p(85,110,10,15,"#b79cff")}
+}
+function drawMonster(){
+const c=$("monster").getContext("2d");c.clearRect(0,0,180,210);
+function p(x,y,w,h,color){c.fillStyle=color;c.fillRect(x,y,w,h)}
+p(40,180,100,8,"#15151b");
+let e=enemy();
+if(e[0]==="Slime"){
+p(45,105,90,65,"#54d36d");p(55,88,70,30,"#80ec87");
+p(65,112,10,12,"#17231b");p(105,112,10,12,"#17231b");
+}else{
+let colors=["#8b68b2","#a95656","#628cb5","#c18c43"];
+let color=colors[state.world%4];
+p(45,75,90,95,color);p(55,50,70,45,color);
+p(65,70,12,12,"#ff4444");p(105,70,12,12,"#ff4444");
+p(75,130,35,8,"#21162b");
+}
+}
+function drawBoss(){
+const c=$("bossCanvas").getContext("2d");c.clearRect(0,0,180,150);
+const p=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(x,y,w,h)};
+const boss=state.boss;const palette=boss?(["#b65a62","#7185c9","#a65acb","#e0783f","#6c55a8"]):["#665c7c"];
+const col=palette[boss?(["Goblin Chief","Ancient Guardian","Frost Queen","Inferno Dragon","Void King"].indexOf(boss.name)+5)%5:0];
+// Pixel-art silhouette, horns, glowing eyes and armor
+p(35,125,110,7,"#090d16");p(48,55,84,68,col);p(57,35,66,48,col);p(58,39,18,22,"#d6b5ff");p(104,39,18,22,"#d6b5ff");
+p(68,57,12,12,"#fff0a6");p(102,57,12,12,"#fff0a6");p(72,61,5,7,"#25152f");p(105,61,5,7,"#25152f");
+p(62,25,13,22,"#ddd1ed");p(105,25,13,22,"#ddd1ed");p(72,92,36,8,"#291b36");
+p(27,76,22,42,col);p(131,76,22,42,col);p(49,117,24,13,"#3b294d");p(108,117,24,13,"#3b294d");
+}
+function renderBoss(){
+drawBoss();
+if(!state.boss){$("bossInfo").textContent="Aucun boss invoqué.";return}
+$("bossInfo").innerHTML="<h3>👑 "+state.boss.name+"</h3>"+fmt(state.boss.hp)+" / "+fmt(state.boss.max)+" PV<div class='bar'><div class='fill' style='width:"+Math.max(0,state.boss.hp/state.boss.max*100)+"%'></div></div>";
+}
+function spawnBoss(){
+let hp=state.enemyMax*15;
+state.boss={name:["Goblin Chief","Ancient Guardian","Frost Queen","Inferno Dragon","Void King"][state.world%5],hp,max:hp};
+$("bossStage").classList.remove("spawned");void $("bossStage").offsetWidth;$("bossStage").classList.add("spawned");log("👑 Un boss apparaît !");update();
+}
+function attackBoss(){
+if(!state.boss)return log("Aucun boss.");
+animateAttack();classAttackFX();$("bossCanvas").classList.remove("boss-hit");void $("bossCanvas").offsetWidth;$("bossCanvas").classList.add("boss-hit");let d=damage()*1.5;state.boss.hp-=d;floatDamage(d,true);
+if(state.boss.hp<=0){
+state.gold+=state.level*100*eventBoost("doublegold");state.gems+=10;state.xp+=state.level*50*eventBoost("doublexp");
+state.bossKills++;state.boss=null;dropGear();levelCheck();log("👑 Boss vaincu !");
+}else if(Math.random()<.2&&!state.god){$("bossCanvas").classList.remove("boss-hit");void $("bossCanvas").offsetWidth;$("bossCanvas").classList.add("boss-hit");log("💢 Le boss prépare une attaque spéciale !");}
+update();
+}
+function tab(name,btn){
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");
+let c=$("content");
+if(name==="profile"){
+c.innerHTML=`<h3>${classes[state.className].emoji} ${state.className}</h3>
+Niveau ${state.level} • ${state.skillPoints} points de compétence
+<p>Force ${state.stats.strength} • Défense ${state.stats.defense}</p>
+<p>Vitesse ${state.stats.speed} • Intelligence ${state.stats.intelligence} • Crit ${state.stats.crit}%</p>
+${["strength","defense","speed","intelligence","crit"].map(s=>`<button onclick="upgradeStat('${s}')">+ ${s}</button>`).join("")}
+<p>Monstres : ${state.kills} • Boss : ${state.bossKills}</p>`;
+}
+if(name==="gear"){
+let slots=[["weapon","⚔️","Arme"],["helmet","🪖","Casque"],["armor","🛡️","Armure"],["boots","👢","Bottes"],["gloves","🧤","Gants"],["ring","💍","Anneau"],["amulet","📿","Amulette"],["shield","🛡️","Bouclier"]];
+c.innerHTML="<h3>Équipement du héros</h3><div class='slots'>"+slots.map(([key,icon,label])=>`<div class="slot"><span>${icon}</span><b>${label}</b><small>${state.equipped[key]?.name||"Vide"}</small></div>`).join("")+"</div><h3>Inventaire</h3>"+(state.gear.length?state.gear.map((g,i)=>`<div class="item"><span class="${g.rarity.toLowerCase()}">${g.name}<small>${g.rarity} • puissance x${g.power.toFixed(2)}</small></span><button onclick="equip(${i})">Équiper</button></div>`).join(""):"Aucun équipement. Vaincs des monstres !");
+}
+if(name==="classes")c.innerHTML=`<h3>⚔️ Académie des classes — ${Object.keys(classes).length} voies</h3><p class="muted">Chaque classe change réellement le style visuel des attaques. Les classes avancées coûtent beaucoup plus cher et demandent un niveau minimum.</p>`+Object.keys(classes).map(n=>{let cl=classes[n],owned=state.classUnlocked.includes(n),ready=state.level>=cl.level&&state.gold>=cl.cost;return `<div class="item class-card"><span>${cl.emoji} <b>${n}</b><small>${cl.skill} • x${cl.mult} dégâts • ${cl.crit}% critique</small><span class="class-note">${cl.desc}</span><small>Requis : niveau ${cl.level} • Prix : ${fmt(cl.cost)} or</small></span><button class="${owned?'good':ready?'gold':''}" onclick="chooseClass(${JSON.stringify(n)})">${owned?(state.className===n?'Équipée':'Choisir'):ready?'Débloquer':'Verrouillée'}</button></div>`}).join("");
+if(name==="pets")c.innerHTML="<h3>Compagnons</h3>"+petNames.map((p,i)=>`<div class="item"><span>🐾 ${p}<small>Bonus de dégâts : +4%</small></span><button onclick="buyPet(${i})">${state.pets.includes(p)?"Possédé":fmt(100+i*100)+" or"}</button></div>`).join("");
+if(name==="worlds")c.innerHTML="<h3>Carte du monde</h3>"+worlds.map((w,i)=>`<div class="item"><span>${w[1]} ${w[0]}<small>Niveau conseillé : ${w[2]}</small></span><button onclick="chooseWorld(${i})" ${i>=state.unlockedWorlds?"disabled":""}>Explorer</button></div>`).join("");
+if(name==="quests")c.innerHTML=`<h3>Quêtes</h3>
+<div class="item">Vaincre 10 monstres (${Math.min(10,state.kills)}/10)<button onclick="claimQuest('kills',10,100)">100 or</button></div>
+<div class="item">Vaincre 3 boss (${Math.min(3,state.bossKills)}/3)<button onclick="claimQuest('boss',3,5)">5 gemmes</button></div>
+<div class="item">Collecter 20 matériaux (${state.materials}/20)<button onclick="claimQuest('materials',20,250)">250 or</button></div>
+<button onclick="joinGuild()">Rejoindre la guilde (200 or)</button>`;
+if(name==="forge")c.innerHTML=`<h3>Forge</h3><p>Matériaux : ${state.materials}</p>
+<button onclick="craft()">Fabriquer une arme (10 matériaux + 100 or)</button>
+<button onclick="craftPotion()">Fabriquer 3 potions (5 matériaux + 50 or)</button>`;
+if(name==="shop")c.innerHTML=`<h3>Boutique</h3>
+<button onclick="buyPotion()">Potion de force : 100 or</button>
+<button onclick="buyChest()">Coffre bronze : 250 or</button>
+<button onclick="buyLegendary()">Coffre légendaire : 5 gemmes</button>
+<button onclick="buyDamage()">Améliorer les dégâts : ${fmt(50*state.baseDamage)} or</button>`;
+if(name==="codes")c.innerHTML=`<h3>Codes cadeaux</h3><input id="codeInput" placeholder="Code"><button onclick="redeem()">Valider</button><p class="muted">WELCOME • LARP2026 • WARRIOR • DRAGON • LEGEND • 6767 • 0706</p>`;
+if(name==="social"){
+ const players=(globalData.players||[]).map(p=>`<div class="feed-entry">👤 <b>${escapeHTML(p.name)}</b><small>Niveau ${Number(p.level)||1} • ${Number(p.kills)||0} monstres • ${Number(p.bossKills)||0} boss</small></div>`).join("")||"<p class='muted'>Aucun autre joueur enregistré pour le moment.</p>";
+ const messages=(globalData.messages||[]).map(m=>`<div class="feed-entry"><b>${escapeHTML(m.name)}</b> : ${escapeHTML(m.message)}<small>${new Date(m.at).toLocaleString("fr-FR")}</small></div>`).join("")||"<p class='muted'>Le chat global est calme.</p>";
+ const inbox=(globalData.inbox||[]).map(g=>`<div class="feed-entry">🎁 Cadeau de <b>${escapeHTML(g.fromName)}</b> : ${fmt(g.amount)} ${g.kind==="gold"?"or":"gemmes"}<button onclick="claimGift('${g.id}')">Récupérer</button></div>`).join("")||"<p class='muted'>Aucun cadeau en attente.</p>";
+ c.innerHTML=`<h3>🌐 Place centrale</h3><div class="social-grid"><div class="social-box"><b>Joueurs</b><div class="feed-list">${players}</div></div><div class="social-box"><b>Chat global</b><div class="feed-list">${messages}</div><input id="chatInput" maxlength="180" placeholder="Message (180 caractères)"><button onclick="sendGlobalChat()">Envoyer</button></div><div class="social-box"><b>Envoyer un cadeau</b><p class="muted">Choisis un nom de joueur dans la liste. Les cadeaux sont en or ou en gemmes.</p><input id="giftTo" placeholder="Nom exact du joueur"><select id="giftKind"><option value="gold">Or</option><option value="gems">Gemmes</option></select><input id="giftAmount" type="number" min="1" max="100000" value="100"><button onclick="sendGift()">🎁 Envoyer</button></div><div class="social-box"><b>Boîte aux cadeaux</b><div class="feed-list">${inbox}</div></div></div><button onclick="refreshGlobal()">Actualiser</button>`;
+}
+if(name==="events"){
+ const ev=(globalData.events||[]).filter(e=>!e.endsAt||e.endsAt>Date.now()).map(e=>`<div class="item"><span>${e.kind==="disco"?"🪩":e.kind==="doublegold"?"💰":e.kind==="doublexp"?"⭐":"🎉"} <b>${escapeHTML(e.title)}</b><small>${escapeHTML(e.description||"")} • ${e.endsAt?"Fin : "+new Date(e.endsAt).toLocaleString("fr-FR"):"Permanent"}</small></span></div>`).join("")||"<p class='muted'>Pas d'événement actif. Reviens bientôt !</p>";
+ c.innerHTML=`<h3>🎉 Événements mondiaux</h3>${ev}<p class="muted">Les annonces et événements sont envoyés à tous les joueurs du site.</p><button onclick="refreshGlobal()">Actualiser les événements</button>`;
+}
+if(name==="ascend")c.innerHTML=`<h3>Ascension</h3><p>Rebirth : ${state.rebirth}</p>
+<button onclick="rebirth()">Rebirth niveau 50</button>
+<button onclick="superRebirth()">Super Rebirth (5 Rebirths)</button>
+<button onclick="divineAscension()">Divine Ascension (15 Rebirths)</button>`;
+}
+function upgradeStat(s){if(state.skillPoints<1)return log("Pas assez de points.");state.skillPoints--;state.stats[s]++;update();tab("profile")}
+function chooseClass(n){
+const cl=classes[n];if(!cl)return log("Classe inconnue.");
+if(!Array.isArray(state.classUnlocked))state.classUnlocked=["Warrior"];
+if(!state.classUnlocked.includes(n)){
+if(state.level<cl.level)return log("Niveau "+cl.level+" requis pour "+n+" (niveau actuel : "+state.level+").");
+if(state.gold<cl.cost)return log("Or insuffisant : il faut "+fmt(cl.cost)+" or pour "+n+".");
+// Achat direct : pas de fenêtre confirm qui peut être bloquée par certains navigateurs.
+state.gold-=cl.cost;state.classUnlocked.push(n);log("🛒 Classe débloquée : "+n+" pour "+fmt(cl.cost)+" or !");
+}
+state.className=n;log("⚔ Classe équipée : "+n+" — "+cl.skill+" !");
+save();update();tab("classes");
+}
+function chooseWorld(i){if(i>=state.unlockedWorlds)return;state.world=i;state.enemyIndex=0;spawnEnemy();log("Exploration : "+worlds[i][0]);tab("worlds")}
+function buyPet(i){let n=petNames[i],cost=100+i*100;if(state.pets.includes(n))return;if(state.gold<cost)return log("Pas assez d'or.");state.gold-=cost;state.pets.push(n);update();tab("pets")}
+function claimQuest(type,goal,reward){
+if(state.quests.includes(type))return log("Quête déjà réclamée.");
+let value=type==="kills"?state.kills:type==="boss"?state.bossKills:state.materials;
+if(value<goal)return log("Quête non terminée.");
+if(type==="materials")state.materials-=goal;
+if(type==="boss")state.gems+=reward;else state.gold+=reward;
+state.quests.push(type);update();tab("quests");
+}
+function joinGuild(){if(state.gold<200)return log("Pas assez d'or.");state.gold-=200;state.baseDamage+=5;log("Tu rejoins la guilde ! +5 dégâts.");update()}
+function craft(){if(state.materials<10||state.gold<100)return log("Ressources insuffisantes.");state.materials-=10;state.gold-=100;state.gear.push({name:"Forged Blade",rarity:"Rare",power:3});update();tab("forge")}
+function craftPotion(){if(state.materials<5||state.gold<50)return log("Ressources insuffisantes.");state.materials-=5;state.gold-=50;state.potions+=3;update();tab("forge")}
+function buyPotion(){if(state.gold<100)return log("Pas assez d'or.");state.gold-=100;state.potions++;update()}
+function buyChest(){if(state.gold<250)return log("Pas assez d'or.");state.gold-=250;dropGear();update()}
+function buyLegendary(){if(state.gems<5)return log("Pas assez de gemmes.");state.gems-=5;let g={...gearDB[Math.floor(Math.random()*gearDB.length)],rarity:"Legendary",power:8};state.gear.push(g);log("Coffre légendaire ouvert : "+g.name);update()}
+function buyDamage(){let cost=50*state.baseDamage;if(state.gold<cost)return log("Pas assez d'or.");state.gold-=cost;state.baseDamage=Math.ceil(state.baseDamage*1.35);update();tab("shop")}
+function redeem(){
+let code=$("codeInput").value.trim().toUpperCase();
+if(state.codes.includes(code))return log("Code déjà utilisé.");
+let rewards={
+WELCOME:()=>state.gold+=500,LARP2026:()=>state.gold+=5000,
+WARRIOR:()=>state.gear.push({...gearDB[1],rarity:"Rare"}),
+DRAGON:()=>state.pets.push("Baby Dragon"),
+LEGEND:()=>state.gear.push({...gearDB[7],rarity:"Legendary",power:10}),
+"6767":()=>state.gold+=50000,
+"0706":()=>state.gear.push({...gearDB[4],rarity:"Epic",power:5})
+};
+if(!rewards[code])return log("Code invalide.");
+rewards[code]();state.codes.push(code);log("Code accepté !");update();tab("codes");
+}
+function rebirth(){
+if(state.level<50)return log("Niveau 50 requis.");
+if(!confirm("Effectuer un Rebirth ?"))return;
+state.rebirth++;state.level=1;state.xp=0;state.gold=0;state.baseDamage=1+state.rebirth;
+state.world=0;state.unlockedWorlds=1;state.enemyIndex=0;spawnEnemy();update();tab("ascend");
+}
+function superRebirth(){if(state.rebirth<5)return log("5 Rebirths requis.");if(!confirm("Super Rebirth ?"))return;state.rebirth-=5;state.baseDamage+=100;state.gems+=20;update()}
+function divineAscension(){if(state.rebirth<15)return log("15 Rebirths requis.");if(!confirm("Divine Ascension ?"))return;state.rebirth-=15;state.baseDamage+=1000;state.gems+=100;update()}
+async function adminLogin(){
+ const code=$("adminCode").value.trim();if(!code)return alert("Entre le code admin.");
+ adminSecret=code;
+ try{
+  const r=await apiCall({action:"admin",code:adminSecret,type:"check"});
+  $("adminArea").innerHTML=`<p class="good">👑 ADMIN GLOBAL CONNECTÉ</p>
+  <div class="admin-tools">
+   <input id="adminMessage" maxlength="220" placeholder="Message global à tous les joueurs"><button onclick="adminAction('message')">📢 Envoyer message global</button>
+   <input id="eventTitle" maxlength="60" placeholder="Nom de l'événement"><input id="eventDesc" maxlength="180" placeholder="Description de l'événement">
+   <select id="eventKind"><option value="normal">Événement normal</option><option value="disco">🪩 DISCO GLOBAL</option><option value="doublegold">💰 OR x2</option><option value="doublexp">⭐ XP x2</option></select><input id="eventMinutes" type="number" min="1" max="10080" value="30" placeholder="Durée en minutes">
+   <button onclick="adminAction('event')">🎉 Lancer événement global</button><button class="danger" onclick="adminAction('endEvents')">Arrêter les événements</button>
+   <input id="adminGold" type="number" min="0" value="1000" placeholder="Or à donner"><input id="adminGems" type="number" min="0" value="10" placeholder="Gemmes à donner">
+   <button class="good" onclick="adminAction('rewardAll')">🎁 Récompenser TOUS les joueurs</button>
+   <input id="adminPlayer" placeholder="Nom exact du joueur"><button onclick="adminAction('givePlayer')">Donner au joueur choisi</button>
+  </div><p class="muted">Outils globaux : annonces, événements disco, récompenses collectives et cadeaux ciblés.</p>`;
+  await refreshGlobal();
+ }catch(e){adminSecret="";alert("Code admin refusé ou serveur non configuré : "+e.message)}
+}
+function exportSave(){
+let blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="larp-save.json";a.click();URL.revokeObjectURL(a.href);
+}
+function importSave(e){
+let f=e.target.files[0];if(!f)return;
+let r=new FileReader();r.onload=()=>{try{
+let d=JSON.parse(r.result);state={...defaultState(),...d,equipped:{...defaultState().equipped,...d.equipped},stats:{...defaultState().stats,...d.stats}};
+save();update();tab("profile");alert("Sauvegarde importée !");
+}catch(err){alert("Fichier invalide.")}};
+r.readAsText(f);
+}
+function resetGame(){if(!confirm("Effacer la progression de ce compte sur cet appareil ?"))return;if(SAVE_KEY)localStorage.removeItem(SAVE_KEY);location.reload()}
+
+// Le jeu ne s'ouvre qu'après une authentification Cloudflare réussie.
+bootAuth();
+setInterval(()=>{if(authUser&&SAVE_KEY){localStorage.setItem(SAVE_KEY,JSON.stringify(state));pushOnlineSave();}},20000);
+</script>
+</body>
+</html>

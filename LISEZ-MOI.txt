@@ -1,0 +1,36 @@
+LARP CLICKER — ÉDITION CLOUDFLARE (Workers + D1 + Durable Objects)
+
+CONTENU
+- public/index.html : jeu existant avec inscription / connexion Cloudflare, sauvegarde cloud, cadeaux, chat et panneau admin.
+- src/index.js : API Worker, authentification par jeton, hash de mot de passe PBKDF2, WebSocket Durable Object.
+- schema.sql : tables D1 pour comptes, profils, messages, événements et cadeaux.
+- wrangler.toml : configuration Cloudflare à compléter avec l'identifiant D1.
+
+INSTALLATION (nécessite un compte Cloudflare et Node.js sur l'ordinateur)
+1. Décompresse le ZIP. Ouvre un terminal dans le dossier LARP_CLICKER_CLOUDFLARE.
+2. Installe les dépendances : npm install
+3. Connecte Wrangler à ton compte : npx wrangler login
+4. Crée la base : npx wrangler d1 create larp-clicker-db
+5. Cloudflare affiche un database_id. Ouvre wrangler.toml et remplace REMPLACE_PAR_LE_DATABASE_ID par cet identifiant.
+6. Crée les tables : npx wrangler d1 execute larp-clicker-db --remote --file=./schema.sql
+7. Configure les secrets (choisis tes propres valeurs secrètes) :
+   npx wrangler secret put AUTH_SECRET
+   npx wrangler secret put LARP_ADMIN_CODE
+   AUTH_SECRET : longue valeur aléatoire, différente du code admin.
+   LARP_ADMIN_CODE : ton code privé pour ouvrir le panneau d'administration dans le jeu.
+8. Test local : npm run dev
+9. Mise en ligne : npm run deploy
+
+Après déploiement, ouvre l'URL Workers fournie par Cloudflare. Les joueurs créent un compte avec un nom unique, un e-mail et un mot de passe d'au moins 10 caractères. Le serveur ne vérifie pas l'adresse e-mail dans cette version : ne mets pas de données personnelles dans le nom de joueur.
+
+TEMPS RÉEL
+Les joueurs connectés ouvrent un WebSocket via Durable Objects. Les annonces admin, événements, messages et cadeaux déclenchent une notification instantanée aux connexions ouvertes; les clients rechargent alors les données depuis l'API. Un joueur hors ligne verra les changements à sa prochaine connexion. Le délai réel dépend du réseau et de la disponibilité Cloudflare; aucune garantie de délai exact n'est possible.
+
+ADMIN
+Dans le jeu, panneau « Administration locale » : entre la valeur que tu as choisie pour LARP_ADMIN_CODE. Tu peux envoyer un message global, lancer DISCO / OR x2 / XP x2, arrêter les événements, et envoyer des cadeaux globaux ou ciblés. Les récompenses administrateur arrivent dans la boîte aux cadeaux des joueurs.
+
+LIMITES / SÉCURITÉ
+- Le jeu original conserve une partie de ses calculs et de sa sauvegarde côté navigateur. C'est un prototype communautaire, pas un système anti-triche robuste. Un joueur techniquement expérimenté peut encore modifier certaines valeurs de progression.
+- Les comptes sont gérés par ce Worker; les mots de passe sont stockés sous forme de hash PBKDF2 salé, jamais en clair. Il n'y a pas encore de vérification e-mail, récupération de mot de passe ni limitation avancée des tentatives de connexion.
+- Pour une communauté importante ou des objets de grande valeur, ajoute une vraie validation serveur des récompenses et des actions de jeu, des protections anti-abus et une politique de modération.
+- Les connexions WebSocket ne fonctionnent que lorsque le jeu est ouvert et connecté. Les joueurs hors ligne ne reçoivent pas de notification push.
